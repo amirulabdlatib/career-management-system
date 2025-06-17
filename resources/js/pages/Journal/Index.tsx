@@ -1,113 +1,194 @@
-
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState } from "react";
+import { router, usePage, Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { Megaphone } from 'lucide-react';
-
-import { PageProps as InertiaPageProps } from '@inertiajs/core';
-
+import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
+import { toast } from "sonner"
 
+// Tag display labels
+const tagLabels = {
+    jobscope: "✅ Within Job Scope",
+    extra: "🌟 Extra Effort",
+    learning: "🧠 Learning",
+    blocker: "❌ Issue",
+};
 
+// Journal entry type
+type JournalEntry = {
+    id: number;
+    content: string;
+    tag: keyof typeof tagLabels;
+    created_at: string; // ISO string from backend
+};
+
+// Breadcrumbs for layout
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Products',
-        href: '/products',
-    },
+    { title: "Dashboard", href: "/dashboard" },
+    { title: "Journal", href: "/journal" },
 ];
 
-interface Product {
-    id: number; // Assuming products have an id
-    name: string;       // Assuming products have a name
-    price: number;      // Assuming products have a price
-    description: string; // Assuming products have a description
-}
+export default function Journal() {
+    const { journals } = usePage<{ journals: JournalEntry[] }>().props;
 
+    // State
+    const [entries, setEntries] = useState<JournalEntry[]>([]);
+    const [entry, setEntry] = useState("");
+    const [tag, setTag] = useState<JournalEntry["tag"]>("jobscope");
+    const [filter, setFilter] = useState<JournalEntry["tag"] | "all">("all");
 
-interface PageProps extends InertiaPageProps {
-    flash?: {
-        message?: string;
-    },
-    products: Product[]; // Assuming products is an array of Product objects
-    // You can add more properties as needed
-}
+    // Sync backend journals into local state
+    useEffect(() => {
+        setEntries(journals);
+    }, [journals]);
 
-export default function Index() {
+    // Random encouragement message
+    const encouragements = [
+        "Nice job! Keep the momentum going 💪",
+        "Great progress today! 🚀",
+        "You’re doing awesome work 🌟",
+        "Another step forward. Well done! ✅",
+        "Proud of your effort today 🙌",
+    ];
 
-    const { products, flash } = usePage<PageProps>().props;
+    // Post new entry
+    const handlePost = () => {
+        if (!entry.trim()) return;
 
-    const { processing, delete: destroy } = useForm();
+        router.post(route('journal.store'), {
+            content: entry,
+            tag,
+        }, {
+             onSuccess: () => {
+            setEntry("");
+            router.reload();
 
+            const message = encouragements[Math.floor(Math.random() * encouragements.length)];
+            toast("Entry Saved!", {
+                description: message,
+                duration: 3000,
+            });
+        },
+    });
+};
 
-
-    const handleDelete = (id: number, name: string) => {
-        if (confirm(`Do you want to delete - ${id}. ${name}?`)) {
-            destroy(route('products.destroy', id)); 
-        }
-    };
-
+    // Filtered view
+    const filteredEntries =
+        filter === "all" ? entries : entries.filter((e) => e.tag === filter);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Products" />
-            <div className='m-4'>
-                <Link href={route('products.create')}><Button>Create a Product</Button></Link>
-            </div>
-            <div className='m-4'>
-                <div>
-                    {flash?.message && (
-                        <Alert>
-                            <Megaphone className="h-4 w-4 text-blue-500" />
-                            <AlertTitle>Notification!</AlertTitle>
-                            <AlertDescription>{flash.message}</AlertDescription>
-                        </Alert>
-                    )}
+            <Head title="Work Journal" />
+
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+
+                {/* Simple dashboard stats */}
+                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+                    <div className="p-4 border rounded-xl">
+                        <p className="text-sm text-muted-foreground">Entries: {entries.length}</p>
+                    </div>
+                    <div className="p-4 border rounded-xl">
+                        <p className="text-sm text-muted-foreground">Latest: {entries[0]?.content || "-"}</p>
+                    </div>
+                    <div className="p-4 border rounded-xl">
+                        <p className="text-sm text-muted-foreground">Filter: {filter}</p>
+                    </div>
+                </div>
+
+                {/* Main journal area */}
+                <div className="border relative flex-1 overflow-hidden rounded-xl p-6">
+                    <div className="max-w-3xl mx-auto space-y-6 w-full">
+                        <h1 className="text-2xl font-bold">📝 Work Journal</h1>
+
+                        {/* Entry form */}
+                        <Card>
+                            <CardContent className="space-y-4 pt-6">
+                                <div className="text-sm text-gray-500">
+                                    Prompt: What was the most significant accomplishment of your day?
+                                </div>
+
+                                <Textarea
+                                    placeholder="Contoh: Debug payment API – caching issue solved 🎯"
+                                    value={entry}
+                                    onChange={(e) => setEntry(e.target.value)}
+                                />
+
+                                <div className="flex items-center gap-4">
+                                    <Select
+                                        onValueChange={(v) => setTag(v as JournalEntry["tag"])}
+                                        defaultValue={tag}
+                                    >
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(tagLabels).map(([key, label]) => (
+                                                <SelectItem key={key} value={key}>
+                                                    {label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    <Button onClick={handlePost}>Post</Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Filter dropdown */}
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold">Timeline</h2>
+                            <Select
+                                onValueChange={(v) => setFilter(v as JournalEntry["tag"] | "all")}
+                                defaultValue="all"
+                            >
+                                <SelectTrigger className="w-[160px]">
+                                    <SelectValue placeholder="Filter by tag" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All</SelectItem>
+                                    {Object.entries(tagLabels).map(([key, label]) => (
+                                        <SelectItem key={key} value={key}>
+                                            {label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Entry list */}
+                        <div className="space-y-4">
+                            {filteredEntries.length === 0 ? (
+                                <p className="text-sm text-gray-500">Let's fill in your first entry!</p>
+                            ) : (
+                                filteredEntries.map((entry) => (
+                                    <Card key={entry.id}>
+                                        <CardContent className="space-y-2 pt-4">
+                                            <div className="flex items-center justify-between">
+                                                <Badge variant="outline">{tagLabels[entry.tag]}</Badge>
+                                                <span className="text-xs text-gray-500">
+                                                    {format(new Date(entry.created_at), "dd MMM yyyy, hh:mm a")}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm">{entry.content}</p>
+                                        </CardContent>
+                                    </Card>
+                                ))
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
-
-
-            {products.length === 0 ? (
-                <div className="m-4 text-center text-gray-500">No products found.</div>
-            ) : (
-                <div className="m-4">
-                    {<Table>
-                        <TableCaption>A list of your recent products.</TableCaption>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[100px]">ID</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Price</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead className="text-center">Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {products.map((product) => (
-                                <TableRow key={product.id}>
-                                    <TableCell className="font-medium">{product.id}</TableCell>
-                                    <TableCell>{product.name}</TableCell>
-                                    <TableCell>RM {product.price.toFixed(2)}</TableCell>
-                                    <TableCell>{product.description}</TableCell>
-                                    <TableCell className="text-center space-x-2">
-                                        <Link href={route('products.edit',product.id)}><Button className="bg-slate-600 hover:bg-slate-700">Edit</Button></Link>
-                                        <Button disabled={processing} onClick={() => handleDelete(product.id, product.name)} className="bg-red-500 hover:bg-red-700">Delete</Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>}
-                </div>
-            )}
         </AppLayout>
     );
 }
