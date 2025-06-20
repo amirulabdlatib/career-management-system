@@ -37,7 +37,7 @@ class JournalController extends Controller
 
     public function edit(string $id)
     {
-        $journal = Journal::find($id);
+        $journal = Journal::findorFail($id);
 
         if($journal->user_id != Auth::id()){
             abort(403,'You are not authorized to view this journal.');
@@ -53,7 +53,7 @@ class JournalController extends Controller
             'tag' => 'required|in:jobscope,extra,learning,blocker',
         ]);
 
-        $journal = Journal::find($id);
+        $journal = Journal::findorFail($id);
 
         if($journal->user_id != Auth::id()){
             abort(403,'You are not authorized to update this journal.');
@@ -69,7 +69,7 @@ class JournalController extends Controller
 
     public function destroy(string $id)
     {
-        $journal = Journal::find($id);
+        $journal = Journal::findorFail($id);
 
          if($journal->user_id != Auth::id()){
             abort(403,'You are not authorized to delete this journal.');
