@@ -11,7 +11,7 @@ class JournalController extends Controller
 {
     public function index()
     {
-         $journals = Journal::where('user_id',Auth::id())
+        $journals = Journal::where('user_id',Auth::id())
                                 ->orderBy('created_at', 'desc')
                                 ->get();
 
@@ -48,7 +48,7 @@ class JournalController extends Controller
 
     public function update(Request $request, string $id)
     {
-          $validated = $request->validate([
+        $validated = $request->validate([
             'content' => 'required|string',
             'tag' => 'required|in:jobscope,extra,learning,blocker',
         ]);
@@ -71,7 +71,7 @@ class JournalController extends Controller
     {
         $journal = Journal::findorFail($id);
 
-         if($journal->user_id != Auth::id()){
+        if($journal->user_id != Auth::id()){
             abort(403,'You are not authorized to delete this journal.');
         }
 
