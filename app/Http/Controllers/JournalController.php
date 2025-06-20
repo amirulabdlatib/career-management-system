@@ -39,6 +39,10 @@ class JournalController extends Controller
     {
         $journal = Journal::find($id);
 
+        if($journal->user_id != Auth::id()){
+            abort(403,'You are not authorized to view this journal.');
+        }
+
         // return Inertia::render('Journal/Edit',compact('journal'));
     } 
 
@@ -51,6 +55,10 @@ class JournalController extends Controller
 
         $journal = Journal::find($id);
 
+        if($journal->user_id != Auth::id()){
+            abort(403,'You are not authorized to update this journal.');
+        }
+
         $journal->update([
             'content' => $validated['content'],
             'tag' => $validated['tag'],
@@ -62,6 +70,10 @@ class JournalController extends Controller
     public function destroy(string $id)
     {
         $journal = Journal::find($id);
+
+         if($journal->user_id != Auth::id()){
+            abort(403,'You are not authorized to delete this journal.');
+        }
 
         $journal->delete();
 
