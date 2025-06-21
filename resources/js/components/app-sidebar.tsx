@@ -14,8 +14,8 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Journal',
-        href: '/journal',
+        title: 'Journals',
+        href: '/journals',
         icon: NotebookPen,
     }
 ];

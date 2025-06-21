@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { router, usePage, Head } from '@inertiajs/react';
+import { router, usePage, Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { toast } from "sonner"
+import { Pencil, Trash2 } from "lucide-react";
 
 // Tag display labels
 const tagLabels = {
@@ -35,7 +36,7 @@ type JournalEntry = {
 // Breadcrumbs for layout
 const breadcrumbs: BreadcrumbItem[] = [
     { title: "Dashboard", href: "/dashboard" },
-    { title: "Journal", href: "/journal" },
+    { title: "Journals", href: "/journals" },
 ];
 
 export default function Journal() {
@@ -65,26 +66,42 @@ export default function Journal() {
     const handlePost = () => {
         if (!entry.trim()) return;
 
-        router.post(route('journal.store'), {
+        router.post(route('journals.store'), {
             content: entry,
             tag,
         }, {
-             onSuccess: () => {
-            setEntry("");
-            router.reload();
+            onSuccess: () => {
+                setEntry("");
+                router.reload();
 
-            const message = encouragements[Math.floor(Math.random() * encouragements.length)];
-            toast("Entry Saved!", {
-                description: message,
-                duration: 3000,
-            });
-        },
-    });
-};
+                const message = encouragements[Math.floor(Math.random() * encouragements.length)];
+                toast("Entry Saved!", {
+                    description: message,
+                    duration: 3000,
+                });
+            },
+        });
+    };
 
     // Filtered view
     const filteredEntries =
         filter === "all" ? entries : entries.filter((e) => e.tag === filter);
+
+
+    // Delete entry
+    const handleDelete = (id: number) => {
+        if (!confirm('Are you sure you want to delete this entry?')) return;
+
+        router.delete(route('journals.destroy', id), {
+            onSuccess: () => {
+                toast.success('Entry deleted successfully.');
+                router.reload(); // Optional: refresh to show latest
+            },
+            onError: () => {
+                toast.error('Failed to delete the entry.');
+            },
+        });
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -181,8 +198,28 @@ export default function Journal() {
                                                 </span>
                                             </div>
                                             <p className="text-sm">{entry.content}</p>
+
+                                            {/* Actions */}
+                                            <div className="flex gap-2 justify-end pt-2">
+                                                <Link href={route('journals.edit', entry.id)}>
+                                                    <Button size="sm" variant="outline">
+                                                        <Pencil className="w-4 h-4 mr-1" />
+                                                        Edit
+                                                    </Button>
+                                                </Link>
+
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={() => handleDelete(entry.id)}
+                                                >
+                                                    <Trash2 className="w-4 h-4 mr-1" />
+                                                    Delete
+                                                </Button>
+                                            </div>
                                         </CardContent>
                                     </Card>
+
                                 ))
                             )}
                         </div>
