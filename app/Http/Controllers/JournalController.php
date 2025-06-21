@@ -11,11 +11,11 @@ class JournalController extends Controller
 {
     public function index()
     {
-        $journals = Journal::where('user_id',Auth::id())
-                                ->orderBy('created_at', 'desc')
-                                ->get();
+        $journals = Journal::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        return Inertia::render('Journal/Index', [
+        return Inertia::render('Journals/Index', [
             'journals' => $journals
         ]);
     }
@@ -30,6 +30,7 @@ class JournalController extends Controller
         Journal::create([
             'content' => $validated['content'],
             'tag' => $validated['tag'],
+            'user_id' => Auth::id(),
         ]);
 
         return redirect()->back()->with('success', 'Journal entry created!');
@@ -39,12 +40,12 @@ class JournalController extends Controller
     {
         $journal = Journal::findorFail($id);
 
-        if($journal->user_id != Auth::id()){
-            abort(403,'You are not authorized to view this journal.');
+        if ($journal->user_id != Auth::id()) {
+            abort(403, 'You are not authorized to view this journal.');
         }
 
-        // return Inertia::render('Journal/Edit',compact('journal'));
-    } 
+        return Inertia::render('Journals/Edit',compact('journal'));
+    }
 
     public function update(Request $request, string $id)
     {
@@ -55,8 +56,8 @@ class JournalController extends Controller
 
         $journal = Journal::findorFail($id);
 
-        if($journal->user_id != Auth::id()){
-            abort(403,'You are not authorized to update this journal.');
+        if ($journal->user_id != Auth::id()) {
+            abort(403, 'You are not authorized to update this journal.');
         }
 
         $journal->update([
@@ -71,13 +72,13 @@ class JournalController extends Controller
     {
         $journal = Journal::findorFail($id);
 
-        if($journal->user_id != Auth::id()){
-            abort(403,'You are not authorized to delete this journal.');
+        if ($journal->user_id != Auth::id()) {
+            abort(403, 'You are not authorized to delete this journal.');
         }
 
         $journal->delete();
 
-        //return redirect()->route('journals.index')->with('success', 'Journal entry updated!');
+         return redirect()->route('journals.index')->with('success', 'Entry deleted.');
 
     }
 
